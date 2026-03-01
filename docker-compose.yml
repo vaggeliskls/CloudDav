@@ -1,5 +1,6 @@
 services:
   webdav:
+    image: ghcr.io/vaggeliskls/clouddav:latest
     build: .
     ports:
       - "8080:8080"
