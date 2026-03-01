@@ -75,7 +75,7 @@ func (l *LDAPAuth) connect() (*ldap.Conn, error) {
 	var err error
 
 	if l.cfg.StartTLS {
-		conn, err = ldap.Dial("tcp", l.cfg.URL)
+		conn, err = ldap.DialURL(l.cfg.URL)
 		if err != nil {
 			return nil, err
 		}
