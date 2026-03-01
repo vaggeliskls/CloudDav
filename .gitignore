@@ -1,0 +1,20 @@
+# Binaries
+webdav-server
+/bin/
+
+# Environment & secrets
+.env
+keys/
+*.json
+!go.sum
+
+# Local data
+webdav-data/
+
+# Go build cache
+*.test
+*.out
+
+# OS
+.DS_Store
+Thumbs.db

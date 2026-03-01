@@ -1,0 +1,25 @@
+FROM golang:1.22-alpine AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /webdav-server ./cmd/server
+
+# ---- final image ----
+FROM scratch
+
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /webdav-server /webdav-server
+
+# Non-root user (numeric UID required by scratch)
+USER 1000:1000
+
+EXPOSE 8080
+
+ENTRYPOINT ["/webdav-server"]
