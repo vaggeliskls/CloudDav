@@ -2,8 +2,6 @@ version: "3"
 
 vars:
   CMD: ./cmd/server
-  GOLANGCI_LINT:
-    sh: go env GOPATH
 
 tasks:
   default:
@@ -29,15 +27,19 @@ tasks:
       - go get -u ./...
       - go mod tidy
 
+  lint:
+    desc: Run golangci-lint
+    cmd: golangci-lint run ./...
+
   lint-install:
     desc: Install golangci-lint (dev only)
-    cmd: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+    cmd: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 
   quality:
     desc: Run linter, vet, and tests (mirrors the CI quality workflow)
     cmds:
       - go vet ./...
-      - "{{.GOLANGCI_LINT}}/bin/golangci-lint run ./..."
+      - golangci-lint run ./...
       - go test -race -count=1 -coverprofile=coverage.out ./...
       - go tool cover -func=coverage.out
 

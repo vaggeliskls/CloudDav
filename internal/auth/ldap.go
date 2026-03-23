@@ -30,7 +30,7 @@ func (l *LDAPAuth) Authenticate(_ context.Context, r *http.Request) (string, err
 	if err != nil {
 		return "", fmt.Errorf("ldap connect: %w", err)
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	// Bind with service account to search for the user.
 	if l.cfg.BindDN != "" {
@@ -80,7 +80,7 @@ func (l *LDAPAuth) connect() (*ldap.Conn, error) {
 			return nil, err
 		}
 		if err := conn.StartTLS(&tls.Config{InsecureSkipVerify: false}); err != nil {
-			conn.Close()
+			_ = conn.Close()
 			return nil, err
 		}
 	} else {

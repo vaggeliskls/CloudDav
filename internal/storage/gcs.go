@@ -13,6 +13,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"golang.org/x/net/webdav"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
@@ -35,7 +36,17 @@ type GCSFileSystem struct {
 func NewGCS(ctx context.Context, cfg GCSConfig) (*GCSFileSystem, error) {
 	var opts []option.ClientOption
 	if cfg.Credentials != "" {
-		opts = append(opts, option.WithCredentialsFile(cfg.Credentials))
+		data, err := os.ReadFile(cfg.Credentials)
+		if err != nil {
+			return nil, fmt.Errorf("gcs: read credentials file: %w", err)
+		}
+		creds, err := google.CredentialsFromJSONWithParams(ctx, data, google.CredentialsParams{ //nolint:staticcheck // credential file is operator-supplied and trusted
+			Scopes: []string{storage.ScopeFullControl},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("gcs: parse credentials: %w", err)
+		}
+		opts = append(opts, option.WithTokenSource(creds.TokenSource))
 	}
 	client, err := storage.NewClient(ctx, opts...)
 	if err != nil {
@@ -132,7 +143,7 @@ func (fs *GCSFileSystem) OpenFile(ctx context.Context, name string, flag int, _ 
 		}
 		return nil, err
 	}
-	defer r.Close()
+	defer r.Close() //nolint:errcheck
 	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
