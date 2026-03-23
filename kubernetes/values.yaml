@@ -1,0 +1,144 @@
+image:
+  repository: ghcr.io/vaggeliskls/cloud-webdav-server
+  tag: latest
+  pullPolicy: Always
+
+replicaCount: 1
+
+serverName: "localhost"
+serverPort: 8080
+logLevel: "info"
+
+# Folder permissions — format: /path:users:mode (comma-separated)
+# users: "public" = no auth, "*" = any authenticated, "alice bob" = specific, "* !charlie" = exclude
+# mode: "ro" = read-only, "rw" = read-write
+folderPermissions: "/public:public:ro,/files:*:rw"
+autoCreateFolders: true
+
+# Allowed HTTP methods per access mode
+roMethods: "GET HEAD OPTIONS PROPFIND"
+rwMethods: "GET HEAD OPTIONS PROPFIND PUT DELETE MKCOL COPY MOVE LOCK UNLOCK PROPPATCH"
+
+# ---------------------------------------------------------------------------
+# Storage backend
+# ---------------------------------------------------------------------------
+storage:
+  # One of: local | s3 | gcs
+  type: local
+
+  # S3 / MinIO (used when type=s3)
+  s3:
+    bucket: ""
+    region: "us-east-1"
+    prefix: ""
+    endpoint: ""   # custom endpoint for MinIO / LocalStack; leave empty for AWS
+    accessKeyId: ""      # stored in Secret
+    secretAccessKey: "" # stored in Secret
+
+  # Google Cloud Storage (used when type=gcs)
+  #
+  # Example:
+  #   1. Create the secret from your service account key file:
+  #        kubectl create secret generic gcs-credentials \
+  #          --from-file=sa.json=/path/to/service-account.json \
+  #          -n <namespace>
+  #
+  #   2. Set values:
+  #        storage:
+  #          type: gcs
+  #          gcs:
+  #            bucket: "my-webdav-bucket"
+  #            serviceAccountSecret: "gcs-credentials"
+  #
+  # The chart mounts the secret at /secrets/gcs/sa.json and sets
+  # GOOGLE_APPLICATION_CREDENTIALS automatically.
+  gcs:
+    bucket: ""
+    prefix: ""
+    serviceAccountSecret: ""  # name of the k8s Secret containing sa.json
+
+# ---------------------------------------------------------------------------
+# Basic Authentication
+# ---------------------------------------------------------------------------
+basicAuth:
+  enabled: true
+  # Users format: "username:password" space-separated (stored in Secret)
+  users: "alice:alice123 bob:bob123"
+
+# ---------------------------------------------------------------------------
+# LDAP Authentication
+# ---------------------------------------------------------------------------
+ldap:
+  enabled: false
+  url: "ldaps://ldap.example.com"
+  attribute: "uid"
+  baseDN: "ou=users,dc=example,dc=com"
+  bindDN: "uid=searchuser,ou=users,dc=example,dc=com"
+  bindPassword: "securepassword" # stored in Secret
+  startTLS: false
+
+# ---------------------------------------------------------------------------
+# OAuth 2.0 / OpenID Connect Authentication
+# ---------------------------------------------------------------------------
+oauth:
+  enabled: false
+  providerURL: "https://keycloak.example.com/realms/myrealm"
+  clientID: "webdav-client"
+  clientSecret: "secret"  # stored in Secret
+  redirectURL: "https://files.example.com/oidc/callback"
+  scopes: "openid email profile"
+  usernameClaim: "preferred_username"
+
+# ---------------------------------------------------------------------------
+# CORS
+# ---------------------------------------------------------------------------
+cors:
+  enabled: false
+  origin: "*"
+  allowedMethods: "GET,HEAD,PUT,DELETE,MKCOL,COPY,MOVE,OPTIONS,PROPFIND,PROPPATCH,LOCK,UNLOCK"
+  allowedHeaders: "Authorization,Content-Type,Depth,If,Lock-Token,Overwrite,Timeout,Destination,X-Requested-With"
+
+# ---------------------------------------------------------------------------
+# Browser access (returns 403 for Mozilla/* User-Agents)
+# ---------------------------------------------------------------------------
+browserAccessBlocked: false
+
+# ---------------------------------------------------------------------------
+# Persistent storage (used when storage.type=local)
+# ---------------------------------------------------------------------------
+persistence:
+  enabled: true
+  storageClass: "" # leave empty to use cluster default
+  size: 10Gi
+
+# ---------------------------------------------------------------------------
+# Service
+# ---------------------------------------------------------------------------
+service:
+  port: 80
+
+# ---------------------------------------------------------------------------
+# Ingress
+# ---------------------------------------------------------------------------
+ingress:
+  enabled: false
+  host: "webdav.example.com"
+  annotations: {}
+  # Examples per ingress controller:
+  #   Traefik: traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+  #   nginx:   nginx.ingress.kubernetes.io/proxy-body-size: "0"
+  #   GKE:     kubernetes.io/ingress.class: "gce"
+  tls:
+    enabled: false
+    secretName: "webdav-tls"
+
+# ---------------------------------------------------------------------------
+# Resources
+# ---------------------------------------------------------------------------
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

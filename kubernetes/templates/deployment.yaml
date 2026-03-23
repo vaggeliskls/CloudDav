@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cloud-webdav-server.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cloud-webdav-server.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "cloud-webdav-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cloud-webdav-server.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000
+      containers:
+        - name: webdav
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.serverPort }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "cloud-webdav-server.name" . }}-config
+            - secretRef:
+                name: {{ include "cloud-webdav-server.name" . }}-secret
+          livenessProbe:
+            httpGet:
+              path: /_health
+              port: {{ .Values.serverPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /_health
+              port: {{ .Values.serverPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          volumeMounts:
+            {{- if and (eq .Values.storage.type "local") .Values.persistence.enabled }}
+            - name: data
+              mountPath: /data
+            {{- end }}
+            {{- if .Values.storage.gcs.serviceAccountSecret }}
+            - name: gcs-credentials
+              mountPath: /secrets/gcs
+              readOnly: true
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        {{- if and (eq .Values.storage.type "local") .Values.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "cloud-webdav-server.name" . }}-data
+        {{- end }}
+        {{- if .Values.storage.gcs.serviceAccountSecret }}
+        - name: gcs-credentials
+          secret:
+            secretName: {{ .Values.storage.gcs.serviceAccountSecret | quote }}
+        {{- end }}

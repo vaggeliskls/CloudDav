@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "cloud-webdav-server.name" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cloud-webdav-server.labels" . | nindent 4 }}
+data:
+  SERVER_NAME: {{ .Values.serverName | quote }}
+  SERVER_PORT: {{ .Values.serverPort | quote }}
+  LOG_LEVEL: {{ .Values.logLevel | quote }}
+
+  STORAGE_TYPE: {{ .Values.storage.type | quote }}
+  LOCAL_DATA_PATH: "/data"
+  AUTO_CREATE_FOLDERS: {{ .Values.autoCreateFolders | quote }}
+
+  S3_BUCKET: {{ .Values.storage.s3.bucket | quote }}
+  S3_REGION: {{ .Values.storage.s3.region | quote }}
+  S3_PREFIX: {{ .Values.storage.s3.prefix | quote }}
+  S3_ENDPOINT: {{ .Values.storage.s3.endpoint | quote }}
+
+  GCS_BUCKET: {{ .Values.storage.gcs.bucket | quote }}
+  GCS_PREFIX: {{ .Values.storage.gcs.prefix | quote }}
+  {{- if .Values.storage.gcs.serviceAccountSecret }}
+  GOOGLE_APPLICATION_CREDENTIALS: "/secrets/gcs/sa.json"
+  {{- end }}
+
+  FOLDER_PERMISSIONS: {{ .Values.folderPermissions | quote }}
+  RO_METHODS: {{ .Values.roMethods | quote }}
+  RW_METHODS: {{ .Values.rwMethods | quote }}
+
+  BASIC_AUTH_ENABLED: {{ .Values.basicAuth.enabled | quote }}
+  LDAP_ENABLED: {{ .Values.ldap.enabled | quote }}
+  LDAP_URL: {{ .Values.ldap.url | quote }}
+  LDAP_ATTRIBUTE: {{ .Values.ldap.attribute | quote }}
+  LDAP_BASE_DN: {{ .Values.ldap.baseDN | quote }}
+  LDAP_BIND_DN: {{ .Values.ldap.bindDN | quote }}
+  LDAP_STARTTLS: {{ .Values.ldap.startTLS | quote }}
+
+  OAUTH_ENABLED: {{ .Values.oauth.enabled | quote }}
+  OIDC_PROVIDER_URL: {{ .Values.oauth.providerURL | quote }}
+  OIDC_CLIENT_ID: {{ .Values.oauth.clientID | quote }}
+  OIDC_REDIRECT_URL: {{ .Values.oauth.redirectURL | quote }}
+  OIDC_SCOPES: {{ .Values.oauth.scopes | quote }}
+  OIDC_USERNAME_CLAIM: {{ .Values.oauth.usernameClaim | quote }}
+
+  CORS_ENABLED: {{ .Values.cors.enabled | quote }}
+  CORS_ORIGIN: {{ .Values.cors.origin | quote }}
+  CORS_ALLOWED_METHODS: {{ .Values.cors.allowedMethods | quote }}
+  CORS_ALLOWED_HEADERS: {{ .Values.cors.allowedHeaders | quote }}
+
+  BROWSER_ACCESS_BLOCKED: {{ .Values.browserAccessBlocked | quote }}

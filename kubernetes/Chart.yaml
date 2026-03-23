@@ -1,0 +1,6 @@
+apiVersion: v2
+name: cloud-webdav-server
+description: A WebDAV server with cloud storage backends and flexible authentication
+type: application
+version: 0.1.0
+appVersion: "latest"
