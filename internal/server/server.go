@@ -63,9 +63,7 @@ func New(cfg *config.Config) (*Server, error) {
 	var middlewares []func(http.Handler) http.Handler
 	middlewares = append(middlewares, loggingMiddleware)
 	middlewares = append(middlewares, securityHeadersMiddleware)
-	if cfg.HealthCheckEnabled {
-		middlewares = append(middlewares, healthMiddleware)
-	}
+	middlewares = append(middlewares, healthMiddleware)
 	middlewares = append(middlewares, downloadMiddleware)
 	if cfg.CORSEnabled {
 		middlewares = append(middlewares, corsMiddleware(

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cloud-webdav-server.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cloud-webdav-server.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "cloud-webdav-server.selectorLabels" . | nindent 4 }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.serverPort }}

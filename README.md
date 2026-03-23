@@ -1,12 +1,14 @@
-# CloudDav — WebDAV Server for Cloud Storage
+# Cloud Webdav Server — WebDAV Server for Cloud Storage
 
-[![CI](https://github.com/vaggeliskls/CloudDav/actions/workflows/ci.yml/badge.svg)](https://github.com/vaggeliskls/CloudDav/actions/workflows/ci.yml)
+[![CI](https://github.com/vaggeliskls/cloud-webdav-server/actions/workflows/ci.yml/badge.svg)](https://github.com/vaggeliskls/cloud-webdav-server/actions/workflows/ci.yml)
 [![Go Version](https://img.shields.io/badge/go-1.26%2B-00ADD8?logo=go)](go.mod)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/vaggeliskls/CloudDav)](https://goreportcard.com/report/github.com/vaggeliskls/CloudDav)
+[![Go Report Card](https://goreportcard.com/badge/github.com/vaggeliskls/cloud-webdav-server)](https://goreportcard.com/report/github.com/vaggeliskls/cloud-webdav-server)
 
 A lightweight, production-ready WebDAV server written in Go.
 Mount **Amazon S3**, **Google Cloud Storage**, or a **local directory** as a WebDAV drive with per-folder access control and multiple authentication methods.
+
+> **Inspired by** [vaggeliskls/webdav-server](https://github.com/vaggeliskls/webdav-server) — if you don't need cloud storage, check out that project for a simpler Docker-based WebDAV server with Basic, LDAP, and OAuth/OIDC support.
 
 ---
 
@@ -61,12 +63,11 @@ All configuration is via environment variables (or a `.env` file).
 | Variable | Default | Description |
 |---|---|---|
 | `STORAGE_TYPE` | `local` | `local` · `s3` · `gcs` |
-| `LOCAL_DATA_PATH` | `./webdav-data` | Root dir for local storage |
+| `LOCAL_DATA_PATH` | `/data` | Root dir for local storage |
 | `FOLDER_PERMISSIONS` | `/files:*:rw` | Comma-separated permission rules (see below) |
 | `BASIC_AUTH_ENABLED` | `true` | Enable HTTP Basic auth |
 | `BASIC_USERS` | — | Space-separated `"alice:pass1 bob:pass2"` |
 | `AUTO_CREATE_FOLDERS` | `true` | Create configured folders at startup |
-| `HEALTH_CHECK_ENABLED` | `false` | Expose `/_health` endpoint |
 | `BROWSER_BLOCK_ENABLED` | `false` | Return 403 to browser User-Agents |
 | `CORS_ENABLED` | `false` | Enable CORS headers |
 | `CORS_ALLOWED_ORIGINS` | `*` | Allowed origins |

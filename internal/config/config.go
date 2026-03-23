@@ -92,7 +92,6 @@ type Config struct {
 	CORSOrigin           string
 	CORSAllowedMethods   string
 	CORSAllowedHeaders   string
-	HealthCheckEnabled   bool
 	BrowserAccessBlocked bool
 }
 
@@ -147,7 +146,6 @@ func Load() (*Config, error) {
 		CORSOrigin:           getEnv("CORS_ORIGIN", "*"),
 		CORSAllowedMethods:   getEnv("CORS_ALLOWED_METHODS", "GET,HEAD,PUT,DELETE,MKCOL,COPY,MOVE,OPTIONS,PROPFIND,PROPPATCH,LOCK,UNLOCK"),
 		CORSAllowedHeaders:   getEnv("CORS_ALLOWED_HEADERS", "Authorization,Content-Type,Depth,If,Lock-Token,Overwrite,Timeout,Destination,X-Requested-With"),
-		HealthCheckEnabled:   getBoolEnv("HEALTH_CHECK_ENABLED", false),
 		BrowserAccessBlocked: getBoolEnv("BROWSER_ACCESS_BLOCKED", false),
 	}
 

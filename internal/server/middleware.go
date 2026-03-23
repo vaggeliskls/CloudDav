@@ -29,6 +29,12 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		start := time.Now()
 		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(rw, r)
+		if r.URL.Path == "/_health" && rw.status == http.StatusOK {
+			return
+		}
+		if r.URL.Path == "/favicon.ico" {
+			return
+		}
 		slog.Info("request",
 			"method", r.Method,
 			"path", r.URL.Path,
@@ -57,12 +63,16 @@ func corsMiddleware(origin, methods, headers string) func(http.Handler) http.Han
 	}
 }
 
-// healthMiddleware responds to /_health with 200 OK.
+// healthMiddleware responds to /_health with 200 OK and /favicon.ico with 404.
 func healthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/_health" {
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, "OK")
+			return
+		}
+		if r.URL.Path == "/favicon.ico" {
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		next.ServeHTTP(w, r)

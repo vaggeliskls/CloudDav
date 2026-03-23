@@ -158,9 +158,7 @@ func TestIntegration_Mkcol(t *testing.T) {
 }
 
 func TestIntegration_HealthCheck(t *testing.T) {
-	ts := newTestServer(t, "/files:alice:rw", func(cfg *config.Config) {
-		cfg.HealthCheckEnabled = true
-	})
+	ts := newTestServer(t, "/files:alice:rw")
 	defer ts.Close()
 
 	resp, err := http.Get(ts.URL + "/_health")
