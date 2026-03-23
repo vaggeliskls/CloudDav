@@ -63,7 +63,7 @@ All configuration is via environment variables (or a `.env` file).
 | Variable | Default | Description |
 |---|---|---|
 | `STORAGE_TYPE` | `local` | `local` · `s3` · `gcs` |
-| `LOCAL_DATA_PATH` | `./webdav-data` | Root dir for local storage |
+| `LOCAL_DATA_PATH` | `/data` | Root dir for local storage |
 | `FOLDER_PERMISSIONS` | `/files:*:rw` | Comma-separated permission rules (see below) |
 | `BASIC_AUTH_ENABLED` | `true` | Enable HTTP Basic auth |
 | `BASIC_USERS` | — | Space-separated `"alice:pass1 bob:pass2"` |
