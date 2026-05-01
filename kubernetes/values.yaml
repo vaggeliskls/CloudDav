@@ -23,7 +23,7 @@ rwMethods: "GET HEAD OPTIONS PROPFIND PUT DELETE MKCOL COPY MOVE LOCK UNLOCK PRO
 # Storage backend
 # ---------------------------------------------------------------------------
 storage:
-  # One of: local | s3 | gcs
+  # One of: local | s3 | gcs | azure
   type: local
 
   # S3 / MinIO (used when type=s3)
@@ -56,6 +56,25 @@ storage:
     bucket: ""
     prefix: ""
     serviceAccountSecret: ""  # name of the k8s Secret containing sa.json
+
+  # Azure Blob Storage (used when type=azure)
+  #
+  # Authenticates with Shared Key. Set account + key — both are required.
+  # The key is stored in the chart's Secret.
+  #
+  # Example:
+  #   storage:
+  #     type: azure
+  #     azure:
+  #       container: "my-webdav-container"
+  #       account: "mystorageacct"
+  #       key: "<account-key>"
+  azure:
+    container: ""
+    prefix: ""
+    account: ""
+    key: ""                # stored in Secret
+    endpoint: ""           # override service URL (Azure Stack / sovereign clouds); leave empty for public Azure
 
 # ---------------------------------------------------------------------------
 # Basic Authentication
