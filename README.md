@@ -6,7 +6,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/vaggeliskls/cloud-webdav-server)](https://goreportcard.com/report/github.com/vaggeliskls/cloud-webdav-server)
 
 A lightweight, production-ready WebDAV server written in Go.
-Mount **Amazon S3**, **Google Cloud Storage**, or a **local directory** as a WebDAV drive with per-folder access control and multiple authentication methods.
+Mount **Amazon S3**, **Google Cloud Storage**, **Azure Blob Storage**, or a **local directory** as a WebDAV drive with per-folder access control and multiple authentication methods.
 
 > **Inspired by** [vaggeliskls/webdav-server](https://github.com/vaggeliskls/webdav-server) — if you don't need cloud storage, check out that project for a simpler Docker-based WebDAV server with Basic, LDAP, and OAuth/OIDC support.
 
@@ -16,7 +16,7 @@ Mount **Amazon S3**, **Google Cloud Storage**, or a **local directory** as a Web
 
 | Feature | Description |
 |---|---|
-| ☁️ **Storage backends** | Local filesystem, Amazon S3 / MinIO, Google Cloud Storage |
+| ☁️ **Storage backends** | Local filesystem, Amazon S3 / MinIO, Google Cloud Storage, Azure Blob Storage |
 | 🔒 **Path-based permissions** | Per-folder access rules with user lists, wildcards, and exclusions |
 | 🔑 **Authentication** | HTTP Basic, LDAP / Active Directory, OpenID Connect (Bearer token) |
 | 📖 **Read-only mode** | Lock folders to `ro` per-folder or per-user |
@@ -35,17 +35,13 @@ cp .env.example .env   # edit as needed
 docker compose up
 ```
 
-The server listens on `http://localhost:8080`.
-
-Try it immediately with curl:
-
-> **Note:** For the curl examples below to work, the `files/` folder (mapped to `LOCAL_DATA_PATH` on the host) must be readable **and** writable by the container user. Run this on the host before starting the container:
+The server listens on `http://localhost:8080`. Try it:
 
 ```sh
-# 📤 Upload a file
+# 📤 Upload
 curl -T README.md http://localhost:8080/files/README.md -u alice:alice123
 
-# 📥 Download a file
+# 📥 Download
 curl http://localhost:8080/files/README.md -u alice:alice123 -O
 
 # 📂 List directory (PROPFIND)
@@ -54,134 +50,38 @@ curl -X PROPFIND http://localhost:8080/files/ -u alice:alice123
 
 ---
 
-## Configuration
+## Documentation
 
-All configuration is via environment variables (or a `.env` file).
+Full docs are published at **<https://vaggeliskls.github.io/cloud-webdav-server>**.
 
-### Environment Variables
+**Getting started**
+- [Local Development](docs/local-development.md) — `task` commands, running against MinIO / Azurite / fake-gcs emulators
+- [Docker](docs/docker.md) — compose, plain `docker run`, image tags, healthchecks
+- [Kubernetes / Helm](docs/kubernetes.md) — install from `oci://ghcr.io/vaggeliskls/charts/cloud-webdav-server`, ingress, probes
 
-| Variable | Default | Description |
-|---|---|---|
-| `STORAGE_TYPE` | `local` | `local` · `s3` · `gcs` |
-| `LOCAL_DATA_PATH` | `/data` | Root dir for local storage |
-| `FOLDER_PERMISSIONS` | `/files:*:rw` | Comma-separated permission rules (see below) |
-| `BASIC_AUTH_ENABLED` | `true` | Enable HTTP Basic auth |
-| `BASIC_USERS` | — | Space-separated `"alice:pass1 bob:pass2"` |
-| `AUTO_CREATE_FOLDERS` | `true` | Create configured folders at startup |
-| `BROWSER_BLOCK_ENABLED` | `false` | Return 403 to browser User-Agents |
-| `CORS_ENABLED` | `false` | Enable CORS headers |
-| `CORS_ALLOWED_ORIGINS` | `*` | Allowed origins |
-| `SERVER_PORT` | `8080` | Listening port |
+**Cloud providers**
+- [Amazon S3 / MinIO](docs/cloud-s3.md) — AWS bucket + IAM, plus R2 / B2 / Wasabi / DO Spaces / MinIO endpoints
+- [Google Cloud Storage](docs/cloud-gcs.md) — bucket setup, service accounts, Workload Identity on GKE
+- [Azure Blob Storage](docs/cloud-azure.md) — storage accounts, containers, Shared Key auth, sovereign clouds
 
-> See [.env.example](.env.example) for the full list including S3, GCS, LDAP, and OIDC options.
-
-### Folder Permissions
-
-```
-FOLDER_PERMISSIONS=/public:public:ro,/files:*:rw,/alice:alice:rw
-```
-
-Format: `/path:users:mode`
-
-| Field | Values |
-|---|---|
-| `path` | Any URL prefix (e.g. `/files`, `/team/docs`) |
-| `users` | `public` (no auth) · `*` (any authenticated) · `alice bob` (specific) · `* !charlie` (exclude) |
-| `mode` | `ro` (read-only) · `rw` (read-write) |
-
-**Longest prefix wins** — `/private/secret` takes precedence over `/private`.
-
-#### Examples
-
-```sh
-# Public read-only share + private rw for alice and bob, charlie excluded from /shared
-FOLDER_PERMISSIONS=/public:public:ro,/alice:alice:rw,/bob:bob:rw,/shared:* !charlie:rw
-```
-
-### Storage Backends
-
-**Local filesystem**
-```env
-STORAGE_TYPE=local
-LOCAL_DATA_PATH=/data
-```
-
-**Amazon S3 / MinIO**
-```env
-STORAGE_TYPE=s3
-S3_BUCKET=my-bucket
-S3_REGION=us-east-1
-AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
-# For MinIO:
-S3_ENDPOINT=http://localhost:9000
-S3_FORCE_PATH_STYLE=true
-```
-
-**Google Cloud Storage**
-```env
-STORAGE_TYPE=gcs
-GCS_BUCKET=my-bucket
-GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/sa.json
-```
-
-### Authentication
-
-**Basic Auth** (default)
-```env
-BASIC_AUTH_ENABLED=true
-BASIC_USERS="alice:alice123 bob:bob456"
-```
-
-**LDAP / Active Directory**
-```env
-LDAP_ENABLED=true
-LDAP_URL=ldap://ldap.example.com:389
-LDAP_BASE_DN=dc=example,dc=com
-LDAP_BIND_DN=cn=readonly,dc=example,dc=com
-LDAP_BIND_PASSWORD=secret
-```
-
-**OpenID Connect (Bearer token)**
-```env
-OIDC_ENABLED=true
-OIDC_ISSUER_URL=https://accounts.example.com
-OIDC_CLIENT_ID=my-client
-```
+**Reference**
+- [Configuration](docs/configuration.md) — full environment-variable reference for every backend and auth provider
 
 ---
 
-## Development
+## Storage backend at a glance
 
-**Prerequisites:** Go 1.22+, Docker (for MinIO integration tests)
-
-```sh
-# Run the server locally
-make run
-
-# Run all tests (with race detector)
-make test
-
-# Start a local MinIO instance for S3 testing
-make minio-up
-
-# Stop MinIO
-make minio-down
-```
-
-**Test coverage:**
-
-| Package | Coverage |
-|---|---|
-| `internal/config` | Permission config parsing |
-| `internal/permissions` | Access control logic & path matching |
-| `internal/server` | HTTP middleware + integration tests |
+| `STORAGE_TYPE` | Required env vars                                                              | Details                                       |
+|----------------|---------------------------------------------------------------------------------|-----------------------------------------------|
+| `local`        | `LOCAL_DATA_PATH`                                                               | [Local Development](docs/local-development.md)|
+| `s3`           | `S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (+ `S3_ENDPOINT` for non-AWS) | [Amazon S3 / MinIO](docs/cloud-s3.md)         |
+| `gcs`          | `GCS_BUCKET`, `GOOGLE_APPLICATION_CREDENTIALS` (or ADC on GKE)                  | [Google Cloud Storage](docs/cloud-gcs.md)     |
+| `azure`        | `AZURE_CONTAINER`, `AZURE_STORAGE_ACCOUNT`, `AZURE_STORAGE_KEY`                 | [Azure Blob Storage](docs/cloud-azure.md)     |
 
 ---
-
 
 ## References
 
-- [vaggeliskls/webdav-server](https://github.com/vaggeliskls/webdav-server) — the original Apache httpd-based WebDAV server that inspired this project. Supports Basic, LDAP, OAuth/OIDC, and per-folder access control via Docker.
+- [vaggeliskls/webdav-server](https://github.com/vaggeliskls/webdav-server) — the original Apache httpd-based WebDAV server that inspired this project.
 - [golang.org/x/net/webdav](https://pkg.go.dev/golang.org/x/net/webdav) — Go standard WebDAV handler
 - [WebDAV RFC 4918](https://www.rfc-editor.org/rfc/rfc4918)

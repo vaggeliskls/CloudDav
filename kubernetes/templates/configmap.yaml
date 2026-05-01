@@ -25,6 +25,11 @@ data:
   GOOGLE_APPLICATION_CREDENTIALS: "/secrets/gcs/sa.json"
   {{- end }}
 
+  AZURE_CONTAINER: {{ .Values.storage.azure.container | quote }}
+  AZURE_PREFIX: {{ .Values.storage.azure.prefix | quote }}
+  AZURE_STORAGE_ACCOUNT: {{ .Values.storage.azure.account | quote }}
+  AZURE_STORAGE_ENDPOINT: {{ .Values.storage.azure.endpoint | quote }}
+
   FOLDER_PERMISSIONS: {{ .Values.folderPermissions | quote }}
   RO_METHODS: {{ .Values.roMethods | quote }}
   RW_METHODS: {{ .Values.rwMethods | quote }}

@@ -44,16 +44,83 @@ tasks:
       - go tool cover -func=coverage.out
 
   minio-up:
-    desc: Start a local MinIO instance (S3-compatible)
+    desc: Start a local MinIO instance and create the `webdav` bucket
     cmds:
-      - docker run -d --name minio
-          -p 9000:9000 -p 9001:9001
-          -e MINIO_ROOT_USER=minioadmin
-          -e MINIO_ROOT_PASSWORD=minioadmin
-          minio/minio server /data --console-address ":9001"
+      - docker compose -f docker-compose.minio.yml up -d
       - echo "MinIO API → http://localhost:9000"
       - echo "MinIO UI  → http://localhost:9001  (minioadmin / minioadmin)"
+      - echo "Bucket    → webdav"
 
   minio-down:
-    desc: Stop and remove the local MinIO instance
-    cmd: docker rm -f minio
+    desc: Stop and remove the local MinIO instance (volumes preserved)
+    cmd: docker compose -f docker-compose.minio.yml down
+
+  minio-reset:
+    desc: Stop MinIO and wipe its data volume
+    cmd: docker compose -f docker-compose.minio.yml down -v
+
+  run-minio:
+    desc: Run the server against the local MinIO instance (run `task minio-up` first)
+    env:
+      STORAGE_TYPE: s3
+      S3_BUCKET: webdav
+      S3_REGION: us-east-1
+      S3_ENDPOINT: http://localhost:9000
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      BASIC_AUTH_ENABLED: "true"
+      BASIC_USERS: "alice:alice123"
+      FOLDER_PERMISSIONS: "/files:*:rw"
+    cmd: go run {{.CMD}}
+
+  azurite-up:
+    desc: Start a local Azurite (Azure Blob emulator) and create the `webdav` container
+    cmds:
+      - docker compose -f docker-compose.azurite.yml up -d
+      - 'echo "Azurite blob → http://localhost:10000"'
+      - 'echo "Container    → webdav (account devstoreaccount1)"'
+
+  azurite-down:
+    desc: Stop and remove the local Azurite instance (volume preserved)
+    cmd: docker compose -f docker-compose.azurite.yml down
+
+  azurite-reset:
+    desc: Stop Azurite and wipe its data volume
+    cmd: docker compose -f docker-compose.azurite.yml down -v
+
+  gcs-up:
+    desc: Start a local fake-gcs-server and create the `webdav` bucket
+    cmds:
+      - docker compose -f docker-compose.fake-gcs.yml up -d
+      - 'echo "fake-gcs → http://localhost:4443"'
+      - 'echo "Bucket   → webdav"'
+
+  gcs-down:
+    desc: Stop and remove the local fake-gcs-server (volume preserved)
+    cmd: docker compose -f docker-compose.fake-gcs.yml down
+
+  gcs-reset:
+    desc: Stop fake-gcs-server and wipe its data volume
+    cmd: docker compose -f docker-compose.fake-gcs.yml down -v
+
+  run-gcs:
+    desc: Run the server against the local fake-gcs-server (run `task gcs-up` first)
+    env:
+      STORAGE_TYPE: gcs
+      GCS_BUCKET: webdav
+      STORAGE_EMULATOR_HOST: http://localhost:4443
+      BASIC_AUTH_ENABLED: "true"
+      BASIC_USERS: "alice:alice123"
+      FOLDER_PERMISSIONS: "/files:*:rw"
+    cmd: go run {{.CMD}}
+
+  run-azure:
+    desc: Run the server against the local Azurite instance (run `task azurite-up` first)
+    env:
+      STORAGE_TYPE: azure
+      AZURE_CONTAINER: webdav
+      AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
+      BASIC_AUTH_ENABLED: "true"
+      BASIC_USERS: "alice:alice123"
+      FOLDER_PERMISSIONS: "/files:*:rw"
+    cmd: go run {{.CMD}}

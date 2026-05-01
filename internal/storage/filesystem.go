@@ -29,6 +29,15 @@ func New(cfg *config.Config) (webdav.FileSystem, error) {
 			Prefix:      cfg.GCSPrefix,
 			Credentials: cfg.GCSCredentials,
 		})
+	case config.StorageAzure:
+		return NewAzure(context.Background(), AzureConfig{
+			Account:          cfg.AzureAccount,
+			Key:              cfg.AzureKey,
+			Container:        cfg.AzureContainer,
+			Prefix:           cfg.AzurePrefix,
+			Endpoint:         cfg.AzureEndpoint,
+			ConnectionString: cfg.AzureConnectionString,
+		})
 	default:
 		return nil, fmt.Errorf("storage: unknown type %q", cfg.StorageType)
 	}
