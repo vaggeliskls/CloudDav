@@ -14,6 +14,7 @@ const (
 	StorageLocal StorageType = "local"
 	StorageS3    StorageType = "s3"
 	StorageGCS   StorageType = "gcs"
+	StorageAzure StorageType = "azure"
 )
 
 // FolderPermission represents a single folder permission entry.
@@ -68,6 +69,13 @@ type Config struct {
 	GCSBucket      string
 	GCSPrefix      string
 	GCSCredentials string // path to service account JSON or empty for ADC
+	// Azure
+	AzureAccount          string
+	AzureKey              string
+	AzureContainer        string
+	AzurePrefix           string
+	AzureEndpoint         string // override service URL (e.g. Azurite)
+	AzureConnectionString string // takes precedence over Account/Key
 
 	// Permissions
 	FolderPermissions []FolderPermission
@@ -113,6 +121,13 @@ func Load() (*Config, error) {
 		GCSBucket:      getEnv("GCS_BUCKET", ""),
 		GCSPrefix:      getEnv("GCS_PREFIX", ""),
 		GCSCredentials: getEnv("GOOGLE_APPLICATION_CREDENTIALS", ""),
+
+		AzureAccount:          getEnv("AZURE_STORAGE_ACCOUNT", ""),
+		AzureKey:              getEnv("AZURE_STORAGE_KEY", ""),
+		AzureContainer:        getEnv("AZURE_CONTAINER", ""),
+		AzurePrefix:           getEnv("AZURE_PREFIX", ""),
+		AzureEndpoint:         getEnv("AZURE_STORAGE_ENDPOINT", ""),
+		AzureConnectionString: getEnv("AZURE_STORAGE_CONNECTION_STRING", ""),
 
 		AutoCreateFolders: getBoolEnv("AUTO_CREATE_FOLDERS", true),
 
@@ -170,9 +185,9 @@ func Load() (*Config, error) {
 
 	// Validate storage type
 	switch cfg.StorageType {
-	case StorageLocal, StorageS3, StorageGCS:
+	case StorageLocal, StorageS3, StorageGCS, StorageAzure:
 	default:
-		return nil, fmt.Errorf("unknown STORAGE_TYPE %q: must be local, s3, or gcs", cfg.StorageType)
+		return nil, fmt.Errorf("unknown STORAGE_TYPE %q: must be local, s3, gcs, or azure", cfg.StorageType)
 	}
 
 	if cfg.StorageType == StorageS3 && cfg.S3Bucket == "" {
@@ -180,6 +195,14 @@ func Load() (*Config, error) {
 	}
 	if cfg.StorageType == StorageGCS && cfg.GCSBucket == "" {
 		return nil, fmt.Errorf("GCS_BUCKET is required when STORAGE_TYPE=gcs")
+	}
+	if cfg.StorageType == StorageAzure {
+		if cfg.AzureContainer == "" {
+			return nil, fmt.Errorf("AZURE_CONTAINER is required when STORAGE_TYPE=azure")
+		}
+		if cfg.AzureConnectionString == "" && (cfg.AzureAccount == "" || cfg.AzureKey == "") {
+			return nil, fmt.Errorf("STORAGE_TYPE=azure requires AZURE_STORAGE_CONNECTION_STRING or AZURE_STORAGE_ACCOUNT + AZURE_STORAGE_KEY")
+		}
 	}
 
 	return cfg, nil
