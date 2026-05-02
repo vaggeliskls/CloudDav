@@ -17,6 +17,16 @@ tasks:
     desc: Run all tests
     cmd: go test -race -count=1 ./...
 
+  upload:
+    desc: 'Upload a file via WebDAV PUT. Usage: task upload FILE=path/to/file [USER=alice:alice123] [URL=http://localhost:8080/files]'
+    requires:
+      vars: [FILE]
+    vars:
+      USER: '{{.USER | default "alice:alice123"}}'
+      URL: '{{.URL | default "http://localhost:8080/files"}}'
+    cmds:
+      - 'curl -sS -T "{{.FILE}}" -u "{{.USER}}" -w "HTTP %{http_code}\n" "{{.URL}}/{{base .FILE}}"'
+
   deps:
     desc: Download Go module dependencies
     cmd: go mod download

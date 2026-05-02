@@ -84,7 +84,7 @@ func browserBlockMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ua := r.Header.Get("User-Agent")
 		if strings.Contains(ua, "Mozilla") {
-			http.Error(w, "Browser access is blocked", http.StatusForbidden)
+			renderError(w, r, http.StatusForbidden, "Browser access is blocked for this path.")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -164,9 +164,9 @@ func authPermMiddleware(
 			case permissions.DenyUnauth:
 				realm := permMgr.Realm(r.URL.Path)
 				w.Header().Set("WWW-Authenticate", fmt.Sprintf(`Basic realm=%q`, realm))
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				renderError(w, r, http.StatusUnauthorized, "Authentication is required to access this resource.")
 			case permissions.DenyForbid:
-				http.Error(w, "Forbidden", http.StatusForbidden)
+				renderError(w, r, http.StatusForbidden, "You don't have permission to access this resource.")
 			}
 		})
 	}

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Status}} {{.Title}}</title>
+  <style>
+    :root {
+      --fg: #1f2328;
+      --muted: #656d76;
+      --border: #d1d9e0;
+      --hover: #f6f8fa;
+      --link: #0969da;
+      --bg: #ffffff;
+      --focus: #0969da;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fg: #e6edf3;
+        --muted: #8d96a0;
+        --border: #30363d;
+        --hover: #161b22;
+        --link: #4493f8;
+        --bg: #0d1117;
+        --focus: #4493f8;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      color: var(--fg);
+      background: var(--bg);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+    .card {
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+    }
+    .status {
+      font-size: 84px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -.02em;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    }
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: .5rem 0 .25rem;
+      letter-spacing: -.01em;
+    }
+    .message {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 0 0 1.5rem;
+    }
+    .back {
+      display: inline-block;
+      font: inherit;
+      font-size: 13px;
+      color: var(--link);
+      background: transparent;
+      text-decoration: none;
+      padding: .35rem .65rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .back:hover { background: var(--hover); }
+    .back:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card" role="alert">
+    <div class="status" aria-hidden="true">{{.Status}}</div>
+    <h1>{{.Title}}</h1>
+    <p class="message">{{.Message}}</p>
+    <button class="back" type="button" onclick="history.back()">← Go back</button>
+  </div>
+</body>
+</html>
