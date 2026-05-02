@@ -30,6 +30,24 @@ curl -X PROPFIND http://localhost:8080/files/ -u alice:alice123
 curl http://localhost:8080/files/README.md -u alice:alice123
 ```
 
+### Quick uploads via `task upload`
+
+A cross-platform helper task wraps the `curl -T` flow — works the same on Linux, macOS, and Windows (Taskfile uses an embedded shell interpreter and `curl` ships with Windows 10+). Required variable: `FILE`.
+
+```sh
+# Default user (alice:alice123) → /files
+
+
+# Different user
+task upload FILE=test.zip USER=bob:bob123
+
+# Different folder or host
+task upload FILE=foo.txt URL=http://localhost:8080/private
+task upload FILE=foo.txt URL=https://files.example.com/files USER=alice:alice123
+```
+
+The task derives the destination filename from the source path automatically (`base` template function — no `basename` binary needed on Windows). It echoes the HTTP status code so you can spot 401/403/4xx/5xx without scrolling through verbose curl output.
+
 ## Tests, lint, coverage
 
 ```sh
