@@ -1,4 +1,4 @@
-name: CI
+name: Release
 
 on:
   release:
@@ -51,3 +51,34 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
+
+  helm-publish:
+    name: Package and push Helm chart
+    needs: docker
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Login to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.REGISTRY }} \
+            --username ${{ github.actor }} \
+            --password-stdin
+
+      - name: Package Helm chart
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          helm package kubernetes \
+            --version "$VERSION" \
+            --app-version "$VERSION"
+
+      - name: Push Helm chart to GHCR
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          helm push cloud-webdav-server-${VERSION}.tgz \
+            oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/charts
