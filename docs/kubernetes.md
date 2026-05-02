@@ -113,6 +113,38 @@ oauth:
   clientSecret: "..."   # in Secret
 ```
 
+### Externally-managed Secrets
+
+For production, keep credentials out of `values.yaml` by pointing the chart at a Secret you manage yourself (`kubectl`, [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets), [External Secrets Operator](https://external-secrets.io), [SOPS](https://github.com/getsops/sops), etc). When `existingSecret` is set on `basicAuth` / `ldap` / `oauth`, the chart's own Secret omits that key and the Deployment injects it via `env: valueFrom.secretKeyRef`. The plaintext value in `values.yaml` is ignored.
+
+| Block       | Value reference                | Env var injected      | Default key inside Secret |
+|-------------|--------------------------------|-----------------------|---------------------------|
+| `basicAuth` | `existingSecret`               | `BASIC_USERS`         | `BASIC_USERS`             |
+| `ldap`      | `existingSecret`               | `LDAP_BIND_PASSWORD`  | `LDAP_BIND_PASSWORD`      |
+| `oauth`     | `existingSecret`               | `OIDC_CLIENT_SECRET`  | `OIDC_CLIENT_SECRET`      |
+
+Override the lookup with `existingSecretKey` if your Secret uses a different field name.
+
+```sh
+# Create the Secret out-of-band
+kubectl create secret generic webdav-basic-auth \
+  --from-literal=BASIC_USERS="alice:alice123 bob:bob456"
+
+kubectl create secret generic webdav-ldap \
+  --from-literal=LDAP_BIND_PASSWORD="..."
+
+kubectl create secret generic webdav-oidc \
+  --from-literal=OIDC_CLIENT_SECRET="..."
+
+# Reference them from the chart
+helm install wd oci://ghcr.io/vaggeliskls/charts/cloud-webdav-server --version <X.Y.Z> \
+  --set basicAuth.existingSecret=webdav-basic-auth \
+  --set ldap.enabled=true --set ldap.existingSecret=webdav-ldap \
+  --set oauth.enabled=true --set oauth.existingSecret=webdav-oidc
+```
+
+Each block is independent — mix chart-managed and externally-managed Secrets freely. Rotate by updating the external Secret; the Pod picks up the new value on next restart.
+
 ## Ingress
 
 ```yaml
