@@ -9,15 +9,37 @@ serverName: "localhost"
 serverPort: 8080
 logLevel: "info"
 
-# Folder permissions — format: /path:users:mode (comma-separated)
+# Folder permissions
 # users: "public" = no auth, "*" = any authenticated, "alice bob" = specific, "* !charlie" = exclude
 # mode: "ro" = read-only, "rw" = read-write
-folderPermissions: "/public:public:ro,/files:*:rw"
+folderPermissions:
+  - path: /public
+    users: public
+    mode: ro
+  - path: /files
+    users: "*"
+    mode: rw
 autoCreateFolders: true
 
 # Allowed HTTP methods per access mode
-roMethods: "GET HEAD OPTIONS PROPFIND"
-rwMethods: "GET HEAD OPTIONS PROPFIND PUT DELETE MKCOL COPY MOVE LOCK UNLOCK PROPPATCH"
+roMethods:
+  - GET
+  - HEAD
+  - OPTIONS
+  - PROPFIND
+rwMethods:
+  - GET
+  - HEAD
+  - OPTIONS
+  - PROPFIND
+  - PUT
+  - DELETE
+  - MKCOL
+  - COPY
+  - MOVE
+  - LOCK
+  - UNLOCK
+  - PROPPATCH
 
 # ---------------------------------------------------------------------------
 # Storage backend

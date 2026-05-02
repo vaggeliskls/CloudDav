@@ -13,6 +13,161 @@ docker compose up -d
 
 The server is on `http://localhost:8080`. Stop with `docker compose down`.
 
+## Production compose examples
+
+Per-backend `docker-compose.yml` snippets meant for real deployments — not the local emulator stacks shipped at the repo root. Keep credentials in an `.env` file alongside the compose, and never commit that `.env` to source control.
+
+Common `.env`:
+
+```dotenv
+# Auth — rotate by editing and re-running `docker compose up -d`
+BASIC_USERS=alice:alice123 bob:bob456
+
+# Permissions
+FOLDER_PERMISSIONS=/files:*:rw
+```
+
+### Local filesystem
+
+```yaml
+services:
+  webdav:
+    image: ghcr.io/vaggeliskls/cloud-webdav-server:latest
+    ports:
+      - "8080:8080"
+    environment:
+      STORAGE_TYPE: local
+      LOCAL_DATA_PATH: /data
+      BASIC_AUTH_ENABLED: "true"
+      BASIC_USERS: ${BASIC_USERS}
+      FOLDER_PERMISSIONS: ${FOLDER_PERMISSIONS}
+      AUTO_CREATE_FOLDERS: "true"
+    volumes:
+      - webdav-data:/data
+    healthcheck:
+      test: ["CMD", "/webdav-server", "--healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  webdav-data:
+```
+
+### Amazon S3
+
+Add to `.env`:
+
+```dotenv
+S3_BUCKET=my-webdav-bucket
+S3_REGION=us-east-1
+AWS_ACCESS_KEY_ID=AKIA...
+AWS_SECRET_ACCESS_KEY=...
+```
+
+```yaml
+services:
+  webdav:
+    image: ghcr.io/vaggeliskls/cloud-webdav-server:latest
+    ports:
+      - "8080:8080"
+    environment:
+      STORAGE_TYPE: s3
+      S3_BUCKET: ${S3_BUCKET}
+      S3_REGION: ${S3_REGION}
+      S3_PREFIX: ${S3_PREFIX:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      BASIC_AUTH_ENABLED: "true"
+      BASIC_USERS: ${BASIC_USERS}
+      FOLDER_PERMISSIONS: ${FOLDER_PERMISSIONS}
+    healthcheck:
+      test: ["CMD", "/webdav-server", "--healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+```
+
+The same compose works for any S3-compatible service (R2, B2, Wasabi, DO Spaces, MinIO) — set `S3_ENDPOINT` in `.env`.
+
+### Google Cloud Storage
+
+Service-account JSON is mounted read-only into the container; the container reads it via `GOOGLE_APPLICATION_CREDENTIALS`.
+
+Add to `.env`:
+
+```dotenv
+GCS_BUCKET=my-webdav-bucket
+GCS_SA_KEY_PATH=./gcs-sa.json   # path on the host, relative to compose file
+```
+
+```yaml
+services:
+  webdav:
+    image: ghcr.io/vaggeliskls/cloud-webdav-server:latest
+    ports:
+      - "8080:8080"
+    environment:
+      STORAGE_TYPE: gcs
+      GCS_BUCKET: ${GCS_BUCKET}
+      GCS_PREFIX: ${GCS_PREFIX:-}
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/gcs/sa.json
+      BASIC_AUTH_ENABLED: "true"
+      BASIC_USERS: ${BASIC_USERS}
+      FOLDER_PERMISSIONS: ${FOLDER_PERMISSIONS}
+    volumes:
+      - ${GCS_SA_KEY_PATH}:/secrets/gcs/sa.json:ro
+    healthcheck:
+      test: ["CMD", "/webdav-server", "--healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+```
+
+### Azure Blob Storage
+
+Add to `.env`:
+
+```dotenv
+AZURE_CONTAINER=webdav
+AZURE_STORAGE_ACCOUNT=mystorageacct
+AZURE_STORAGE_KEY=...
+```
+
+```yaml
+services:
+  webdav:
+    image: ghcr.io/vaggeliskls/cloud-webdav-server:latest
+    ports:
+      - "8080:8080"
+    environment:
+      STORAGE_TYPE: azure
+      AZURE_CONTAINER: ${AZURE_CONTAINER}
+      AZURE_PREFIX: ${AZURE_PREFIX:-}
+      AZURE_STORAGE_ACCOUNT: ${AZURE_STORAGE_ACCOUNT}
+      AZURE_STORAGE_KEY: ${AZURE_STORAGE_KEY}
+      AZURE_STORAGE_ENDPOINT: ${AZURE_STORAGE_ENDPOINT:-}
+      BASIC_AUTH_ENABLED: "true"
+      BASIC_USERS: ${BASIC_USERS}
+      FOLDER_PERMISSIONS: ${FOLDER_PERMISSIONS}
+    healthcheck:
+      test: ["CMD", "/webdav-server", "--healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+```
+
+Set `AZURE_STORAGE_ENDPOINT` only for sovereign clouds (Azure Government, Azure China) or Azure Stack — leave empty for public Azure.
+
 ## Plain docker run
 
 Local filesystem:
