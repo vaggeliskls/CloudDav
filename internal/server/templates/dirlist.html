@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Index of {{.Path}}</title>
+  <style>
+    :root {
+      --fg: #1f2328;
+      --muted: #656d76;
+      --border: #d1d9e0;
+      --hover: #f6f8fa;
+      --link: #0969da;
+      --bg: #ffffff;
+      --focus: #0969da;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fg: #e6edf3;
+        --muted: #8d96a0;
+        --border: #30363d;
+        --hover: #161b22;
+        --link: #4493f8;
+        --bg: #0d1117;
+        --focus: #4493f8;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      color: var(--fg);
+      background: var(--bg);
+      margin: 0;
+    }
+    main {
+      max-width: 880px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    .path {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+      font-size: 13px;
+      margin-bottom: .25rem;
+      word-break: break-all;
+    }
+    .path a {
+      color: var(--fg);
+      text-decoration: none;
+      padding: .1rem .2rem;
+      border-radius: 3px;
+    }
+    .path a:hover { background: var(--hover); color: var(--link); }
+    .path a:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+    .path .sep { color: var(--muted); }
+    .meta {
+      color: var(--muted);
+      font-size: 12px;
+      padding-bottom: .5rem;
+      border-bottom: 1px solid var(--border);
+      margin: 0 0 .25rem;
+    }
+    ul { list-style: none; padding: 0; margin: 0; }
+    .row {
+      display: grid;
+      grid-template-columns: 1.25rem 1fr auto auto;
+      gap: .75rem;
+      align-items: center;
+      padding: .3rem .5rem;
+      border-radius: 4px;
+      color: inherit;
+      text-decoration: none;
+    }
+    .row:hover { background: var(--hover); }
+    .row:hover .name { color: var(--link); text-decoration: underline; }
+    .row:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: -2px;
+    }
+    .icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+    }
+    .icon svg { display: block; }
+    .dir .icon { color: var(--link); }
+    .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .size, .date {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+      font-size: 12px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .size { min-width: 4.5rem; text-align: right; }
+    .date { min-width: 8.5rem; text-align: right; }
+    .empty {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    @media (max-width: 540px) {
+      .date { display: none; }
+      main { margin: 1rem auto; }
+      .row { grid-template-columns: 1.25rem 1fr auto; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <nav class="path" aria-label="Current path">
+    <a href="/" aria-label="Root">/</a>{{range .Breadcrumbs}}<a href="{{.Href}}">{{.Name}}</a><span class="sep">/</span>{{end}}
+  </nav>
+  <p class="meta">{{.Count}} item{{if ne .Count 1}}s{{end}}</p>
+  <ul>
+    {{- if .Parent}}
+    <li class="dir">
+      <a class="row" href="{{.Parent}}" aria-label="Parent directory">
+        <span class="icon" aria-hidden="true">{{template "icon-up"}}</span>
+        <span class="name">..</span>
+        <span class="size"></span>
+        <span class="date"></span>
+      </a>
+    </li>
+    {{- end}}
+    {{- range .Entries}}
+    <li class="{{if .IsDir}}dir{{end}}">
+      <a class="row" href="{{.Href}}">
+        <span class="icon" aria-hidden="true">{{if .IsDir}}{{template "icon-folder"}}{{else}}{{template "icon-file"}}{{end}}</span>
+        <span class="name">{{.Name}}</span>
+        <span class="size">{{.Size}}</span>
+        <span class="date">{{.ModTime}}</span>
+      </a>
+    </li>
+    {{- end}}
+    {{- if eq .Count 0}}
+    <li class="empty">This directory is empty</li>
+    {{- end}}
+  </ul>
+</main>
+</body>
+</html>
+{{define "icon-folder"}}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>{{end}}
+{{define "icon-file"}}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>{{end}}
+{{define "icon-up"}}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>{{end}}

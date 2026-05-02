@@ -1,8 +1,9 @@
 package server
 
 import (
+	_ "embed"
 	"fmt"
-	"html"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"path"
@@ -12,11 +13,53 @@ import (
 	"golang.org/x/net/webdav"
 )
 
+//go:embed templates/dirlist.html
+var dirListTemplateSrc string
+
+var dirListTemplate = template.Must(template.New("dirlist").Parse(dirListTemplateSrc))
+
 // dirListHandler wraps a webdav.Handler and intercepts GET/HEAD requests on
 // directories, serving an HTML directory listing instead of returning 405.
 type dirListHandler struct {
 	webdav http.Handler
 	fs     webdav.FileSystem
+}
+
+type dirListData struct {
+	Path        string
+	Parent      string
+	Breadcrumbs []breadcrumb
+	Entries     []dirListEntry
+	Count       int
+}
+
+type breadcrumb struct {
+	Name string
+	Href string
+}
+
+type dirListEntry struct {
+	Name    string
+	Href    string
+	IsDir   bool
+	Size    string
+	ModTime string
+}
+
+func makeBreadcrumbs(p string) []breadcrumb {
+	p = strings.Trim(p, "/")
+	if p == "" {
+		return nil
+	}
+	parts := strings.Split(p, "/")
+	crumbs := make([]breadcrumb, 0, len(parts))
+	var accum strings.Builder
+	for _, part := range parts {
+		accum.WriteByte('/')
+		accum.WriteString(part)
+		crumbs = append(crumbs, breadcrumb{Name: part, Href: accum.String() + "/"})
+	}
+	return crumbs
 }
 
 func (h *dirListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +68,6 @@ func (h *dirListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ensure directory paths end with "/".
 	urlPath := r.URL.Path
 	if !strings.HasSuffix(urlPath, "/") {
 		fi, err := h.fs.Stat(r.Context(), urlPath)
@@ -37,16 +79,14 @@ func (h *dirListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	fi, err := h.fs.Stat(r.Context(), urlPath)
 	if err != nil || !fi.IsDir() {
-		// Not a directory — let the webdav handler deal with it (file or 404).
 		h.webdav.ServeHTTP(w, r)
 		return
 	}
 
-	// Open the directory and list its children.
 	f, err := h.fs.OpenFile(r.Context(), urlPath, 0, 0)
 	if err != nil {
 		slog.Error("openfile failed", "path", urlPath, "err", err)
-		http.Error(w, "cannot open directory", http.StatusInternalServerError)
+		renderError(w, r, http.StatusInternalServerError, "Could not open the directory.")
 		return
 	}
 	defer f.Close()
@@ -54,11 +94,10 @@ func (h *dirListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	entries, err := f.Readdir(-1)
 	if err != nil {
 		slog.Error("readdir failed", "path", urlPath, "err", err)
-		http.Error(w, "cannot read directory", http.StatusInternalServerError)
+		renderError(w, r, http.StatusInternalServerError, "Could not read the directory.")
 		return
 	}
 
-	// Sort: directories first, then files, both alphabetically.
 	sort.Slice(entries, func(i, j int) bool {
 		di, dj := entries[i].IsDir(), entries[j].IsDir()
 		if di != dj {
@@ -67,66 +106,43 @@ func (h *dirListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return entries[i].Name() < entries[j].Name()
 	})
 
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if r.Method == http.MethodHead {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-
-	title := html.EscapeString(urlPath)
-	fmt.Fprintf(w, `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Index of %s</title>
-  <style>
-    body { font-family: monospace; margin: 2rem; }
-    h1   { border-bottom: 1px solid #ccc; padding-bottom: .4rem; }
-    table { border-collapse: collapse; width: 100%%; }
-    th, td { text-align: left; padding: .3rem .8rem; }
-    th { border-bottom: 2px solid #ccc; }
-    tr:hover { background: #f5f5f5; }
-    a    { text-decoration: none; color: #0366d6; }
-    a:hover { text-decoration: underline; }
-    .size { text-align: right; }
-    .date { color: #666; }
-  </style>
-</head>
-<body>
-<h1>Index of %s</h1>
-<table>
-  <tr><th>Name</th><th class="size">Size</th><th class="date">Modified</th></tr>
-`, title, title)
-
-	// Parent directory link (except at root).
+	data := dirListData{
+		Path:        urlPath,
+		Breadcrumbs: makeBreadcrumbs(urlPath),
+		Entries:     make([]dirListEntry, 0, len(entries)),
+		Count:       len(entries),
+	}
 	if urlPath != "/" {
 		parent := path.Dir(strings.TrimSuffix(urlPath, "/"))
 		if !strings.HasSuffix(parent, "/") {
 			parent += "/"
 		}
-		fmt.Fprintf(w, `  <tr><td><a href="%s">../</a></td><td class="size">-</td><td class="date">-</td></tr>
-`, html.EscapeString(parent))
+		data.Parent = parent
 	}
-
 	for _, e := range entries {
-		name := html.EscapeString(e.Name())
-		href := html.EscapeString(e.Name())
-		sizeStr := "-"
-		if !e.IsDir() {
-			sizeStr = formatSize(e.Size())
-		} else {
-			href += "/"
-			name += "/"
+		entry := dirListEntry{
+			Name:    e.Name(),
+			Href:    e.Name(),
+			IsDir:   e.IsDir(),
+			ModTime: e.ModTime().Format("2006-01-02 15:04"),
 		}
-		modTime := e.ModTime().Format("2006-01-02 15:04")
-		fmt.Fprintf(w, "  <tr><td><a href=\"%s\">%s</a></td><td class=\"size\">%s</td><td class=\"date\">%s</td></tr>\n",
-			href, name, sizeStr, modTime)
+		if e.IsDir() {
+			entry.Href += "/"
+		} else {
+			entry.Size = formatSize(e.Size())
+		}
+		data.Entries = append(data.Entries, entry)
 	}
 
-	fmt.Fprint(w, "</table>\n</body>\n</html>\n")
+	if err := dirListTemplate.Execute(w, data); err != nil {
+		slog.Error("template execute failed", "err", err)
+	}
 }
 
 func formatSize(n int64) string {
