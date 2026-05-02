@@ -103,8 +103,20 @@ storage:
 # ---------------------------------------------------------------------------
 basicAuth:
   enabled: true
-  # Users format: "username:password" space-separated (stored in Secret)
+  # Users format: "username:password" space-separated (stored in Secret).
+  # Ignored when existingSecret is set.
   users: "alice:alice123 bob:bob123"
+
+  # Read BASIC_USERS from a Secret you manage outside the chart
+  # (kubectl, Sealed Secrets, External Secrets, SOPS, etc).
+  # When set, `users` above is ignored and the chart-managed Secret will
+  # not contain BASIC_USERS.
+  #
+  # Create the Secret out-of-band, e.g.:
+  #   kubectl create secret generic webdav-basic-auth \
+  #     --from-literal=BASIC_USERS="alice:alice123 bob:bob456"
+  existingSecret: ""           # name of the Secret
+  existingSecretKey: BASIC_USERS  # key inside the Secret
 
 # ---------------------------------------------------------------------------
 # LDAP Authentication

@@ -33,6 +33,14 @@ spec:
                 name: {{ include "cloud-webdav-server.name" . }}-config
             - secretRef:
                 name: {{ include "cloud-webdav-server.name" . }}-secret
+          {{- if .Values.basicAuth.existingSecret }}
+          env:
+            - name: BASIC_USERS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.basicAuth.existingSecret | quote }}
+                  key: {{ .Values.basicAuth.existingSecretKey | quote }}
+          {{- end }}
           livenessProbe:
             httpGet:
               path: /_health
