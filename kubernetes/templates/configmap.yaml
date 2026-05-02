@@ -30,9 +30,9 @@ data:
   AZURE_STORAGE_ACCOUNT: {{ .Values.storage.azure.account | quote }}
   AZURE_STORAGE_ENDPOINT: {{ .Values.storage.azure.endpoint | quote }}
 
-  FOLDER_PERMISSIONS: {{ .Values.folderPermissions | quote }}
-  RO_METHODS: {{ .Values.roMethods | quote }}
-  RW_METHODS: {{ .Values.rwMethods | quote }}
+  FOLDER_PERMISSIONS: {{ include "cloud-webdav-server.folderPermissions" . | quote }}
+  RO_METHODS: {{ join " " .Values.roMethods | quote }}
+  RW_METHODS: {{ join " " .Values.rwMethods | quote }}
 
   BASIC_AUTH_ENABLED: {{ .Values.basicAuth.enabled | quote }}
   LDAP_ENABLED: {{ .Values.ldap.enabled | quote }}

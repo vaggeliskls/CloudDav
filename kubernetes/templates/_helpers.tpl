@@ -22,3 +22,15 @@ Selector labels
 app.kubernetes.io/name: {{ include "cloud-webdav-server.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Render folderPermissions array as the comma-separated /path:users:mode string
+the server expects via FOLDER_PERMISSIONS.
+*/}}
+{{- define "cloud-webdav-server.folderPermissions" -}}
+{{- $rules := list -}}
+{{- range .Values.folderPermissions -}}
+{{- $rules = append $rules (printf "%s:%s:%s" .path .users .mode) -}}
+{{- end -}}
+{{- join "," $rules -}}
+{{- end }}

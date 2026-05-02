@@ -9,15 +9,37 @@ serverName: "localhost"
 serverPort: 8080
 logLevel: "info"
 
-# Folder permissions — format: /path:users:mode (comma-separated)
+# Folder permissions
 # users: "public" = no auth, "*" = any authenticated, "alice bob" = specific, "* !charlie" = exclude
 # mode: "ro" = read-only, "rw" = read-write
-folderPermissions: "/public:public:ro,/files:*:rw"
+folderPermissions:
+  - path: /public
+    users: public
+    mode: ro
+  - path: /files
+    users: "*"
+    mode: rw
 autoCreateFolders: true
 
 # Allowed HTTP methods per access mode
-roMethods: "GET HEAD OPTIONS PROPFIND"
-rwMethods: "GET HEAD OPTIONS PROPFIND PUT DELETE MKCOL COPY MOVE LOCK UNLOCK PROPPATCH"
+roMethods:
+  - GET
+  - HEAD
+  - OPTIONS
+  - PROPFIND
+rwMethods:
+  - GET
+  - HEAD
+  - OPTIONS
+  - PROPFIND
+  - PUT
+  - DELETE
+  - MKCOL
+  - COPY
+  - MOVE
+  - LOCK
+  - UNLOCK
+  - PROPPATCH
 
 # ---------------------------------------------------------------------------
 # Storage backend
@@ -32,8 +54,19 @@ storage:
     region: "us-east-1"
     prefix: ""
     endpoint: ""   # custom endpoint for MinIO / LocalStack; leave empty for AWS
-    accessKeyId: ""      # stored in Secret
-    secretAccessKey: "" # stored in Secret
+    # Stored in the chart-managed Secret. Ignored when existingSecret is set.
+    accessKeyId: ""
+    secretAccessKey: ""
+
+    # Read AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY from a Secret you
+    # manage outside the chart. When set, accessKeyId/secretAccessKey above
+    # are ignored.
+    #   kubectl create secret generic webdav-s3 \
+    #     --from-literal=AWS_ACCESS_KEY_ID="..." \
+    #     --from-literal=AWS_SECRET_ACCESS_KEY="..."
+    existingSecret: ""
+    accessKeyIdKey: AWS_ACCESS_KEY_ID
+    secretAccessKeyKey: AWS_SECRET_ACCESS_KEY
 
   # Google Cloud Storage (used when type=gcs)
   #
@@ -73,16 +106,36 @@ storage:
     container: ""
     prefix: ""
     account: ""
-    key: ""                # stored in Secret
+    # Stored in the chart-managed Secret. Ignored when existingSecret is set.
+    key: ""
     endpoint: ""           # override service URL (Azure Stack / sovereign clouds); leave empty for public Azure
+
+    # Read AZURE_STORAGE_KEY from a Secret you manage outside the chart.
+    # When set, `key` above is ignored.
+    #   kubectl create secret generic webdav-azure \
+    #     --from-literal=AZURE_STORAGE_KEY="..."
+    existingSecret: ""
+    existingSecretKey: AZURE_STORAGE_KEY
 
 # ---------------------------------------------------------------------------
 # Basic Authentication
 # ---------------------------------------------------------------------------
 basicAuth:
   enabled: true
-  # Users format: "username:password" space-separated (stored in Secret)
+  # Users format: "username:password" space-separated (stored in Secret).
+  # Ignored when existingSecret is set.
   users: "alice:alice123 bob:bob123"
+
+  # Read BASIC_USERS from a Secret you manage outside the chart
+  # (kubectl, Sealed Secrets, External Secrets, SOPS, etc).
+  # When set, `users` above is ignored and the chart-managed Secret will
+  # not contain BASIC_USERS.
+  #
+  # Create the Secret out-of-band, e.g.:
+  #   kubectl create secret generic webdav-basic-auth \
+  #     --from-literal=BASIC_USERS="alice:alice123 bob:bob456"
+  existingSecret: ""           # name of the Secret
+  existingSecretKey: BASIC_USERS  # key inside the Secret
 
 # ---------------------------------------------------------------------------
 # LDAP Authentication
@@ -93,8 +146,16 @@ ldap:
   attribute: "uid"
   baseDN: "ou=users,dc=example,dc=com"
   bindDN: "uid=searchuser,ou=users,dc=example,dc=com"
-  bindPassword: "securepassword" # stored in Secret
+  # Stored in the chart-managed Secret. Ignored when existingSecret is set.
+  bindPassword: "securepassword"
   startTLS: false
+
+  # Read LDAP_BIND_PASSWORD from a Secret you manage outside the chart.
+  # When set, `bindPassword` above is ignored.
+  #   kubectl create secret generic webdav-ldap \
+  #     --from-literal=LDAP_BIND_PASSWORD="..."
+  existingSecret: ""
+  existingSecretKey: LDAP_BIND_PASSWORD
 
 # ---------------------------------------------------------------------------
 # OAuth 2.0 / OpenID Connect Authentication
@@ -103,10 +164,18 @@ oauth:
   enabled: false
   providerURL: "https://keycloak.example.com/realms/myrealm"
   clientID: "webdav-client"
-  clientSecret: "secret"  # stored in Secret
+  # Stored in the chart-managed Secret. Ignored when existingSecret is set.
+  clientSecret: "secret"
   redirectURL: "https://files.example.com/oidc/callback"
   scopes: "openid email profile"
   usernameClaim: "preferred_username"
+
+  # Read OIDC_CLIENT_SECRET from a Secret you manage outside the chart.
+  # When set, `clientSecret` above is ignored.
+  #   kubectl create secret generic webdav-oidc \
+  #     --from-literal=OIDC_CLIENT_SECRET="..."
+  existingSecret: ""
+  existingSecretKey: OIDC_CLIENT_SECRET
 
 # ---------------------------------------------------------------------------
 # CORS
