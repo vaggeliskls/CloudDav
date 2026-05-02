@@ -33,7 +33,7 @@ spec:
                 name: {{ include "cloud-webdav-server.name" . }}-config
             - secretRef:
                 name: {{ include "cloud-webdav-server.name" . }}-secret
-          {{- if or .Values.basicAuth.existingSecret .Values.ldap.existingSecret .Values.oauth.existingSecret }}
+          {{- if or .Values.basicAuth.existingSecret .Values.ldap.existingSecret .Values.oauth.existingSecret .Values.storage.s3.existingSecret .Values.storage.azure.existingSecret }}
           env:
             {{- if .Values.basicAuth.existingSecret }}
             - name: BASIC_USERS
@@ -55,6 +55,25 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.oauth.existingSecret | quote }}
                   key: {{ .Values.oauth.existingSecretKey | quote }}
+            {{- end }}
+            {{- if .Values.storage.s3.existingSecret }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.storage.s3.existingSecret | quote }}
+                  key: {{ .Values.storage.s3.accessKeyIdKey | quote }}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.storage.s3.existingSecret | quote }}
+                  key: {{ .Values.storage.s3.secretAccessKeyKey | quote }}
+            {{- end }}
+            {{- if .Values.storage.azure.existingSecret }}
+            - name: AZURE_STORAGE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.storage.azure.existingSecret | quote }}
+                  key: {{ .Values.storage.azure.existingSecretKey | quote }}
             {{- end }}
           {{- end }}
           livenessProbe:

@@ -54,8 +54,19 @@ storage:
     region: "us-east-1"
     prefix: ""
     endpoint: ""   # custom endpoint for MinIO / LocalStack; leave empty for AWS
-    accessKeyId: ""      # stored in Secret
-    secretAccessKey: "" # stored in Secret
+    # Stored in the chart-managed Secret. Ignored when existingSecret is set.
+    accessKeyId: ""
+    secretAccessKey: ""
+
+    # Read AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY from a Secret you
+    # manage outside the chart. When set, accessKeyId/secretAccessKey above
+    # are ignored.
+    #   kubectl create secret generic webdav-s3 \
+    #     --from-literal=AWS_ACCESS_KEY_ID="..." \
+    #     --from-literal=AWS_SECRET_ACCESS_KEY="..."
+    existingSecret: ""
+    accessKeyIdKey: AWS_ACCESS_KEY_ID
+    secretAccessKeyKey: AWS_SECRET_ACCESS_KEY
 
   # Google Cloud Storage (used when type=gcs)
   #
@@ -95,8 +106,16 @@ storage:
     container: ""
     prefix: ""
     account: ""
-    key: ""                # stored in Secret
+    # Stored in the chart-managed Secret. Ignored when existingSecret is set.
+    key: ""
     endpoint: ""           # override service URL (Azure Stack / sovereign clouds); leave empty for public Azure
+
+    # Read AZURE_STORAGE_KEY from a Secret you manage outside the chart.
+    # When set, `key` above is ignored.
+    #   kubectl create secret generic webdav-azure \
+    #     --from-literal=AZURE_STORAGE_KEY="..."
+    existingSecret: ""
+    existingSecretKey: AZURE_STORAGE_KEY
 
 # ---------------------------------------------------------------------------
 # Basic Authentication

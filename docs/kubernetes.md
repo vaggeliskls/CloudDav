@@ -115,18 +115,22 @@ oauth:
 
 ### Externally-managed Secrets
 
-For production, keep credentials out of `values.yaml` by pointing the chart at a Secret you manage yourself (`kubectl`, [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets), [External Secrets Operator](https://external-secrets.io), [SOPS](https://github.com/getsops/sops), etc). When `existingSecret` is set on `basicAuth` / `ldap` / `oauth`, the chart's own Secret omits that key and the Deployment injects it via `env: valueFrom.secretKeyRef`. The plaintext value in `values.yaml` is ignored.
+For production, keep credentials out of `values.yaml` by pointing the chart at a Secret you manage yourself (`kubectl`, [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets), [External Secrets Operator](https://external-secrets.io), [SOPS](https://github.com/getsops/sops), etc). When `existingSecret` is set on `basicAuth` / `ldap` / `oauth` / `storage.s3` / `storage.azure`, the chart's own Secret omits those keys and the Deployment injects them via `env: valueFrom.secretKeyRef`. The plaintext values in `values.yaml` are ignored.
 
-| Block       | Value reference                | Env var injected      | Default key inside Secret |
-|-------------|--------------------------------|-----------------------|---------------------------|
-| `basicAuth` | `existingSecret`               | `BASIC_USERS`         | `BASIC_USERS`             |
-| `ldap`      | `existingSecret`               | `LDAP_BIND_PASSWORD`  | `LDAP_BIND_PASSWORD`      |
-| `oauth`     | `existingSecret`               | `OIDC_CLIENT_SECRET`  | `OIDC_CLIENT_SECRET`      |
+| Block             | Value reference     | Env var(s) injected                          | Default key(s) inside Secret                 |
+|-------------------|---------------------|----------------------------------------------|----------------------------------------------|
+| `basicAuth`       | `existingSecret`    | `BASIC_USERS`                                | `BASIC_USERS`                                |
+| `ldap`            | `existingSecret`    | `LDAP_BIND_PASSWORD`                         | `LDAP_BIND_PASSWORD`                         |
+| `oauth`           | `existingSecret`    | `OIDC_CLIENT_SECRET`                         | `OIDC_CLIENT_SECRET`                         |
+| `storage.s3`      | `existingSecret`    | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` |
+| `storage.azure`   | `existingSecret`    | `AZURE_STORAGE_KEY`                          | `AZURE_STORAGE_KEY`                          |
 
-Override the lookup with `existingSecretKey` if your Secret uses a different field name.
+Override the lookup with `existingSecretKey` (or `accessKeyIdKey` / `secretAccessKeyKey` for S3) if your Secret uses different field names.
+
+> GCS uses a separate path: the service-account JSON is mounted from a Secret you create out-of-band via `storage.gcs.serviceAccountSecret` — see the [Google Cloud Storage example](#google-cloud-storage) above.
 
 ```sh
-# Create the Secret out-of-band
+# Create the Secrets out-of-band
 kubectl create secret generic webdav-basic-auth \
   --from-literal=BASIC_USERS="alice:alice123 bob:bob456"
 
@@ -136,11 +140,19 @@ kubectl create secret generic webdav-ldap \
 kubectl create secret generic webdav-oidc \
   --from-literal=OIDC_CLIENT_SECRET="..."
 
+kubectl create secret generic webdav-s3 \
+  --from-literal=AWS_ACCESS_KEY_ID="..." \
+  --from-literal=AWS_SECRET_ACCESS_KEY="..."
+
+kubectl create secret generic webdav-azure \
+  --from-literal=AZURE_STORAGE_KEY="..."
+
 # Reference them from the chart
 helm install wd oci://ghcr.io/vaggeliskls/charts/cloud-webdav-server --version <X.Y.Z> \
   --set basicAuth.existingSecret=webdav-basic-auth \
   --set ldap.enabled=true --set ldap.existingSecret=webdav-ldap \
-  --set oauth.enabled=true --set oauth.existingSecret=webdav-oidc
+  --set oauth.enabled=true --set oauth.existingSecret=webdav-oidc \
+  --set storage.type=s3 --set storage.s3.existingSecret=webdav-s3
 ```
 
 Each block is independent — mix chart-managed and externally-managed Secrets freely. Rotate by updating the external Secret; the Pod picks up the new value on next restart.
