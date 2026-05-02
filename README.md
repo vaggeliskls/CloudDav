@@ -1,6 +1,7 @@
 # Cloud Webdav Server — WebDAV Server for Cloud Storage
 
-[![CI](https://github.com/vaggeliskls/cloud-webdav-server/actions/workflows/ci.yml/badge.svg)](https://github.com/vaggeliskls/cloud-webdav-server/actions/workflows/ci.yml)
+[![Code Quality](https://github.com/vaggeliskls/cloud-webdav-server/actions/workflows/quality.yml/badge.svg)](https://github.com/vaggeliskls/cloud-webdav-server/actions/workflows/quality.yml)
+[![Release](https://github.com/vaggeliskls/cloud-webdav-server/actions/workflows/release.yml/badge.svg)](https://github.com/vaggeliskls/cloud-webdav-server/actions/workflows/release.yml)
 [![Go Version](https://img.shields.io/badge/go-1.26%2B-00ADD8?logo=go)](go.mod)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/vaggeliskls/cloud-webdav-server)](https://goreportcard.com/report/github.com/vaggeliskls/cloud-webdav-server)
