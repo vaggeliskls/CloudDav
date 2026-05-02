@@ -33,13 +33,29 @@ spec:
                 name: {{ include "cloud-webdav-server.name" . }}-config
             - secretRef:
                 name: {{ include "cloud-webdav-server.name" . }}-secret
-          {{- if .Values.basicAuth.existingSecret }}
+          {{- if or .Values.basicAuth.existingSecret .Values.ldap.existingSecret .Values.oauth.existingSecret }}
           env:
+            {{- if .Values.basicAuth.existingSecret }}
             - name: BASIC_USERS
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.basicAuth.existingSecret | quote }}
                   key: {{ .Values.basicAuth.existingSecretKey | quote }}
+            {{- end }}
+            {{- if .Values.ldap.existingSecret }}
+            - name: LDAP_BIND_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.ldap.existingSecret | quote }}
+                  key: {{ .Values.ldap.existingSecretKey | quote }}
+            {{- end }}
+            {{- if .Values.oauth.existingSecret }}
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.oauth.existingSecret | quote }}
+                  key: {{ .Values.oauth.existingSecretKey | quote }}
+            {{- end }}
           {{- end }}
           livenessProbe:
             httpGet:

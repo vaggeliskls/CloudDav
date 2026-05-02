@@ -127,8 +127,16 @@ ldap:
   attribute: "uid"
   baseDN: "ou=users,dc=example,dc=com"
   bindDN: "uid=searchuser,ou=users,dc=example,dc=com"
-  bindPassword: "securepassword" # stored in Secret
+  # Stored in the chart-managed Secret. Ignored when existingSecret is set.
+  bindPassword: "securepassword"
   startTLS: false
+
+  # Read LDAP_BIND_PASSWORD from a Secret you manage outside the chart.
+  # When set, `bindPassword` above is ignored.
+  #   kubectl create secret generic webdav-ldap \
+  #     --from-literal=LDAP_BIND_PASSWORD="..."
+  existingSecret: ""
+  existingSecretKey: LDAP_BIND_PASSWORD
 
 # ---------------------------------------------------------------------------
 # OAuth 2.0 / OpenID Connect Authentication
@@ -137,10 +145,18 @@ oauth:
   enabled: false
   providerURL: "https://keycloak.example.com/realms/myrealm"
   clientID: "webdav-client"
-  clientSecret: "secret"  # stored in Secret
+  # Stored in the chart-managed Secret. Ignored when existingSecret is set.
+  clientSecret: "secret"
   redirectURL: "https://files.example.com/oidc/callback"
   scopes: "openid email profile"
   usernameClaim: "preferred_username"
+
+  # Read OIDC_CLIENT_SECRET from a Secret you manage outside the chart.
+  # When set, `clientSecret` above is ignored.
+  #   kubectl create secret generic webdav-oidc \
+  #     --from-literal=OIDC_CLIENT_SECRET="..."
+  existingSecret: ""
+  existingSecretKey: OIDC_CLIENT_SECRET
 
 # ---------------------------------------------------------------------------
 # CORS
